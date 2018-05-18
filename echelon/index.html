@@ -1,0 +1,365 @@
+<!--
+Copyright (c) 2006-2011 Marlon Reghert Alves dos Santos & Lucas de Souza Albuquerque
+Licensed under GPL (http://www.opensource.org/licenses/gpl-license.php) licenses.
+ -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Matrix Echelon & Reduced form</title>
+
+        
+        <link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.css">
+        <script type="text/javascript" src="http://code.jquery.com/jquery-2.1.0.min.js"></script>
+        <script type="text/javascript" src="bootstrap/js/bootstrap.js"></script>
+        <link rel="stylesheet" type="text/css" href="css/style.css">
+
+<body>
+
+
+<div class="container" id="navBarContainer">
+
+   <div class="navbar navbar-default navbar-fixed-top">
+    <div class="container" id="headerContainer">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+          <a class="navbar-brand" href="index.html" id="navBarTitle"><strong>Echelon & Reduced</strong></a>
+      </div>
+      <div class="collapse navbar-collapse">
+        <ul class="nav navbar-nav navbar-right ">
+          <li class="active">
+
+            <!-- <a href="#">About this bugigang</a> -->
+            <!-- Button trigger modal -->
+            <a class="btn" data-toggle="modal" data-target="#myModal">
+              About this bugigang
+              <span class="glyphicon glyphicon-question-sign"></span>
+            </a>
+
+          </li>
+          <li>
+            <a href="https://github.com/marlonwc3/echelon" id="linkGitHub" title="You can check this project on GitHub" target="_blank"> 
+              <img src="img/github.png" id="githubImg">
+             </a>
+          </li>
+
+           <li id="version">
+            <p>Beta version</p>
+          </li>
+        </ul>
+
+
+<!--         <ul class="nav navbar-nav ">
+         <li id="version">
+            <p>Beta version</p>
+          </li>
+          <li><a href="#">Help</a></li>
+        </ul> -->
+        
+<!--         <ul class="nav navbar-nav navbar-right">
+          <li><a href="">Contact <span class="glyphicon glyphicon-user"></span></a></li>
+        </ul> -->
+      </div><!--/.nav-collapse -->
+
+
+
+
+
+
+    </div>
+  </div>
+
+</div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header" style="text-align: center;">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="myModalLabel">Info</h4>
+      </div>
+      <div class="modal-body" style="text-align: center;">
+        
+
+        <p class="title">Just a echelon/reduce matrix calculator to <a target="_blank" href="http://www.cin.ufpe.br/~ma531">Linear Algebra</a> (~MA531) discipline, ministred by Professor Dr. <a target="_blank" href="http://www.cin.ufpe.br/~pmmc/">Pedro Machado Manhães de Castro</a> (pmmc@cin.ufpe.br), at <a target="_blank" href="http://www2.cin.ufpe.br/site/index.php">Centro de Informatica</a> (CIn) - UFPE </p>  
+        <p>This aplication was developed with objective of help everyone that are studying Linear Algebra</p>
+        <p>Using EPS equals 10e-8 and five digits for decimal values.</p>
+        <p>Echelon/Reduce your matrix</p>
+        <p>Shows PA=LU</p>
+        <p>Has a system that shows step-by-step the operation</p>        
+        <p>Provides Elementar Matrix at step-by-step</p>        
+        <p>Beta version</p>
+        <h4 class="header"></h4>
+
+        <span id="devBy">
+          <p class="subheader">Dev by: </p>           
+          <p style=""> <a target="_blank" href="http://www.cin.ufpe.br/~mras/">Marlon Reghert Alves dos Santos</a> (mras@cin.ufpe.br)</p>
+        </span> 
+        <p class="subheader">in collaboration with: </p>
+        <span id="devBy">
+
+          <p> <a target="_blank" href="http://www.cin.ufpe.br/~lsa2/">Lucas de Souza Albuquerque</a> (lsa2@cin.ufpe.br)</p>  
+        </span>
+        <h4 class="header"></h4>
+          <span id="colaborators"> 
+            <p> There is list of people who helped with design issues, bug report, beta users, tips and others. If you help finding a greatest bug your name can be pushed on this list and you will be helping others users in the study of Linear Algebra. If you've find some bug send a email to: lsa2@cin.ufpe.br</p>
+            <p>  <a target="_blank" href="http://www.cin.ufpe.br/~tls/"> <i>Tomer de Lima Simis</a> (tls@cin.ufpe.br)</i> - Helped this project with front-end and design issues.</p>    
+            <p>  <a target="_blank" href="http://www.cin.ufpe.br/~jrs4/"> <i>João Ricardo dos Santos</a> (jrs4@cin.ufpe.br)</i> - Helped this project finding bugs.</p>
+
+            <p>  <a href="#"> <i> Your name here</a> </i> (yourlogin@some.email.provider) - Helped this project finding some bug that my antivirus consider a malware </p>    
+
+
+          </span>        
+
+
+
+<!-- <img src="https://fbcdn-sphotos-b-a.akamaihd.net/hphotos-ak-frc3/t1.0-9/558233_127167340762802_988799158_n.jpg">        
+<img src="https://fbcdn-sphotos-b-a.akamaihd.net/hphotos-ak-frc3/t1.0-9/558233_127167340762802_988799158_n.jpg">      -->   
+        
+
+
+      </div>
+      <div class="modal-footer" style="text-align: center;">
+        <p>All persons mentioned above have awesome projects, games, tools, and more! You can check their jobs clicking on his names.</p>
+        <button type="button" class="btn btn-primary btn-md" id="modalBackButton" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+  </div>
+
+
+
+  <div class="container" id="myIndexContainer">
+  
+     
+    <div class=" container-fluid well" id="myIndexWell">
+      <form class="form-horizontal">
+        <fieldset>  
+          <!-- Select Basic -->
+          <div class="form-group">
+            <label class="col-md-4 control-label" for="selectbasic">Number of rows</label>
+            <div class="col-md-4" >
+                <select id="selectbasic" name="selectbasic" class="form-control">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>  
+                <option value="11">11</option>   
+                <option value="12">12</option>
+                <option value="13">13</option>
+      				<option value="14">14</option>
+      				<option value="15">15</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Select Basic -->
+          <div class="form-group">
+            <label class="col-md-4 control-label" for="selectbasic">Number of columns</label>
+            <div class="col-md-4">
+              <select id="selectbasic" name="selectbasic" class="form-control">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>  
+                <option value="11">11</option>  
+                <option value="12">12</option>  
+                <option value="13">13</option>
+        				<option value="14">14</option>
+        				<option value="15">15</option>				
+              </select>
+            </div>
+          </div>
+          <!-- Multiple Checkboxes -->
+          <div class="form-group">
+            <label class="col-md-4 control-label" for="checkboxes">Reduced form</label>
+              <div class="col-xs-12 col-xs-offset-5 col-md-4 col-md-offset-0">
+
+
+
+
+            <div class="checkbox">
+                <input type="checkbox" name="checkboxes" id="checkboxes-0" value="1">
+            </div>
+
+
+
+
+
+            </div>
+          </div>
+          <!-- Button -->
+        </fieldset>
+      </form>
+
+      <div class="col-xs-12 col-md-4 col-md-offset-4">
+        <button id="indexGo" name="singlebutton" class="btn btn-success">Go ahead <span class="glyphicon glyphicon-hand-right"></span> </button>
+      </div>  
+    </div>
+
+
+    <div class="row" id="rowGilbertStrang">
+      <div class="col-lg-6 col-lg-offset-3 col-md-7 col-md-offset-2 col-sm-8 col-sm-offset-2  col-xs-8 col-xs-offset-2">
+        <a target="_blank" href="http://ocw.mit.edu/courses/mathematics/18-06-linear-algebra-spring-2010/video-lectures/"><img title="Check Gilbert Strang open course at MIT" id="gilbertStrangImg" src="img/strang2.png" width="395" class="img-rounded" ></a>
+        <p id"strangInfo" style="opacity:0.75;" width="12"><i>"Because some men make complex things be easier enough"</i></p>
+
+
+      </div>
+    </div>
+
+
+
+
+  </div>
+
+
+
+
+<div class="container" id="myContainer">
+      
+
+
+
+  <h2 id="enter">Enter your matrix here </h2>
+  <span id="holdMatrix">
+
+  </span>      
+
+  <br>
+  <div class="container" id="holdButtons">
+    <button class="btn btn-primary" id="backIndex"><span class="glyphicon glyphicon-hand-left"> </span>   Settings  </button>
+    <button class="btn btn-success" id="echelonButton"> <span id="echelonButtonText">Echelon</span>
+     <span id="echelonButtonGlyph" class="glyphicon glyphicon-sort-by-attributes"></span></button>
+  </div>
+
+</div>
+
+
+
+<div class="container" id="myContainerResults">
+    <div class="container" id="resultsHeader">
+      <h1 id="headerTittle">Be happy (:</h1>
+      <p style="opacity: 0.5;">
+        Obs: All decimal numbers are rounded by 5 digits and we use a EPS equals 10e-8
+        <p style="opacity: 0.5; font-size: 12px;">If you have found a bug, just stay calm and call the fire department</p>
+      </p>
+    </div>
+
+      <div class="row centered" id="matrixTableResult">
+        <div class="col-xs-12">
+          <div id="resultsResponsive">
+            <table class="multipleCols box table table-bordered" id="matrixResultsHolder">
+
+
+            </table>
+
+          </div>
+          
+
+        </div>
+
+      </div>
+      <!-- Container that contain the steps -->  
+      <div class="row centered" id="detCalc">
+        <div class="col-xs-6 col-xs-offset-3" id="detCalcCol">
+          <p id="detCalcInfo"> 
+
+          </p>
+
+
+        </div>
+
+        
+      </div>
+
+      <h4>
+
+        <strong id="statusMatrix">
+          
+          <p id="squareStatus"></p>
+          <p id="singularStatus"> <span id="glyphSingular"></span></p>
+          
+
+          <p id="detResult"></p>
+
+          <p id="detInfo"> Click on "Determinant" button bellow to see how we found this result above</p>
+
+
+        
+        </strong>
+
+       </h4>
+
+      <!-- Buttons container  -->
+      <div class="container" id="holdButtons">
+        <button class="btn  btn-primary"  role="button" id="back"><span class="glyphicon glyphicon-hand-left"> </span>   Back to input
+        </button>
+        <button class="btn btn-warning"  role="button" id="detCheck" value="0"> Determinant
+        </button>                     
+        <button class="btn btn-warning"  role="button" id="PALUbutton">PA=LU
+        </button>              
+        <button class="btn btn-info"  role="button" id="stepByStep">Step-by-step
+          <span class="glyphicon glyphicon-step-forward"></span>
+        </button>        
+      </div>
+
+
+      <blockquote id="thanksQuote" style="border-left: none;"> Thank's for using our app.</blockquote>
+</div>
+
+<div class="container" id="myPALUResults">
+
+
+
+      <!-- Buttons container  -->
+      <div class="container" id="holdButtons">
+        <button class="btn btn-primary" id="backFromPALU">
+
+          <span class="glyphicon glyphicon-hand-left"> </span>
+
+          Back to my result</button>
+      </div>   
+</div>
+
+
+
+
+<!-- Container that contain the steps -->  
+<div class="container" id="mySteps">
+
+  <div class="container" id="holdButtons">
+    
+    <button class="btn btn-primary" id="backToResults"><span class="glyphicon glyphicon-hand-left"> </span>   Back to my result</button>
+  </div>
+</div>
+
+
+
+        
+
+        <script type="text/javascript" src="js/echelonOthers.js"></script>
+        <script type="text/javascript" src="js/echelonPage.js"></script>
+        <script type="text/javascript" src="js/echelon.js"></script>  
+        <script type="text/javascript" src="js/tests.js"></script>
+        <script type="text/javascript" src="js/jquery.numeric.js"></script>
+</body>
+</html>
+
