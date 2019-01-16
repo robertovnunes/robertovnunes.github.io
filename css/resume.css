@@ -131,11 +131,11 @@ section.resume-section .resume-item .resume-date {
 }
 
 .bg-primary {
-  background-color: #20B2AA !important;
+  background-color: #9455A0 !important;
 }
 
 .text-primary {
-  color: #20B2AA !important;
+  color: #6A5ACD !important;
 }
 
 a {
@@ -144,4 +144,22 @@ a {
 
 a:hover, a:focus, a:active {
   color: #008B8B;
+}
+
+.idiomas{
+    height: 7%;
+    width: 100%;
+/* margin-left: -20%;*/
+}
+
+.bandeiraen{
+    margin-right: 34%;
+    width: 15%;
+    float: right;
+}
+
+.bandeirabr{
+    margin-left: 34%;
+    width: 15%;
+    float: left;
 }
