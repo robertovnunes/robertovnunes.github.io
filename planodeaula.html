@@ -10,9 +10,17 @@
         
         body { font-family: 'Inter', sans-serif; }
 
+        /* Remove as margens padrão do navegador (cabeçalhos e rodapés automáticos com URL/Data) */
+        @page {
+            margin: 0; 
+        }
+
         @media print {
             .no-print { display: none !important; }
-            body { background-color: white !important; padding: 0 !important; }
+            
+            /* Adiciona um espaçamento para o conteúdo não ficar colado na borda física do papel */
+            body { background-color: white !important; padding: 1.5cm !important; }
+            
             .print-container { 
                 box-shadow: none !important; 
                 border: none !important; 
@@ -22,18 +30,35 @@
                 padding: 0 !important;
             }
             .section-card { border: 1px solid #e2e8f0 !important; page-break-inside: avoid; }
-            textarea { border: none !important; resize: none !important; }
+            
+            /* Remove as bordas dos campos para a impressão ficar com cara de documento de texto */
+            textarea, input, select { 
+                border: none !important; 
+                resize: none !important; 
+                background: transparent !important;
+                -webkit-appearance: none;
+                appearance: none;
+                box-shadow: none !important;
+                outline: none !important;
+            }
+
+            /* Remove os fundos coloridos das textareas para economizar tinta e ficar mais limpo */
+            .bg-slate-50\/50, .bg-blue-50, .bg-slate-50 {
+                background-color: transparent !important;
+            }
         }
 
         .tech-gradient {
             background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            /* Força a impressão do gradiente de fundo no Chrome/Edge */
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen py-6 px-4">
 
     <div class="max-w-4xl mx-auto">
-        <!-- Header - Escola Fixa -->
         <header class="text-center mb-8 no-print">
             <div class="inline-flex items-center justify-center p-4 bg-white rounded-2xl shadow-sm border border-slate-200 mb-4">
                 <div class="p-2 bg-blue-600 rounded-lg mr-3">
@@ -46,9 +71,7 @@
             <p class="text-slate-500 font-medium">Sistema de Planejamento de Robótica & Informática</p>
         </header>
 
-        <!-- Documento Principal -->
         <div class="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden print-container">
-            <!-- Cabeçalho do Documento (Aparece na Impressão) -->
             <div class="tech-gradient p-8 text-white">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                     <div>
@@ -66,7 +89,6 @@
 
             <form id="lessonPlanForm" class="p-8 space-y-8">
                 
-                <!-- 1. Identificação Técnica -->
                 <section class="section-card p-6 bg-slate-50 rounded-2xl border border-slate-100">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-1">
@@ -93,10 +115,9 @@
                     </div>
                 </section>
 
-                <!-- 2. Tema Central -->
                 <section>
                     <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-600 no-print" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                         Tema da Aula / Projeto
@@ -104,7 +125,6 @@
                     <input type="text" placeholder="Ex: Construção de Protótipo com Alavancas ou Introdução ao Editor de Texto" class="w-full px-5 py-3 rounded-2xl border-2 border-slate-200 focus:border-blue-500 focus:ring-0 text-lg font-semibold text-slate-800 outline-none transition-all">
                 </section>
 
-                <!-- 3. Objetivos e Materiais -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <section>
                         <label class="block text-sm font-bold text-slate-700 mb-2">Objetivos Pedagógicos</label>
@@ -116,10 +136,9 @@
                     </section>
                 </div>
 
-                <!-- 4. Metodologia -->
                 <section class="space-y-4">
                     <h3 class="text-lg font-bold text-slate-800 flex items-center">
-                        <span class="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center mr-3 text-sm">M</span>
+                        <span class="w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center mr-3 text-sm no-print">M</span>
                         Roteiro de Atividades
                     </h3>
                     
@@ -141,13 +160,11 @@
                     </div>
                 </section>
 
-                <!-- 5. Avaliação -->
-                <section class="p-6 bg-blue-50 rounded-2xl border border-blue-100">
+                <section class="p-6 bg-blue-50 rounded-2xl border border-blue-100 section-card">
                     <label class="block text-sm font-bold text-blue-800 mb-2">Critérios de Avaliação e Observações</label>
                     <textarea rows="3" placeholder="Como será verificado o aprendizado? Algum aluno precisou de apoio extra?" class="w-full px-4 py-3 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-400 outline-none bg-white"></textarea>
                 </section>
 
-                <!-- Botões de Ação -->
                 <div class="pt-8 border-t border-slate-200 flex flex-wrap gap-4 justify-between no-print">
                     <button type="button" onclick="clearForm()" class="px-6 py-3 text-slate-500 font-bold hover:text-red-500 transition-colors uppercase text-xs tracking-widest">
                         Resetar Tudo
@@ -179,4 +196,3 @@
     </script>
 </body>
 </html>
-
