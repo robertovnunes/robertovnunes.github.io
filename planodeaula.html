@@ -12,6 +12,7 @@
 
         /* --- CONFIGURAÇÕES DE MARGEM DA FOLHA (IMPRESSORA) --- */
         @page {
+            /* Margens superior e inferior a partir da página 2 para o texto não cortar/colar na borda */
             margin-top: 1.5cm;
             margin-bottom: 1.5cm;
             margin-left: 0;
@@ -19,12 +20,15 @@
         }
 
         @page :first {
+            /* Na primeira página tiramos a margem física do topo, pois o 'padding' do body já fará esse papel */
             margin-top: 0; 
         }
 
         @media print {
             .no-print { display: none !important; }
             
+            /* Ajustamos o padding (Top, Right, Bottom, Left) */
+            /* O topo tem 1.5cm apenas para a primeira página, e as laterais para todas as páginas */
             body { 
                 background-color: white !important; 
                 padding: 1.5cm 1.5cm 0 1.5cm !important; 
@@ -54,22 +58,8 @@
                 background-color: transparent !important;
             }
 
-            /* --- ESTILIZAÇÃO DA LISTA PARA IMPRESSÃO --- */
-            #listaRecursos {
-                padding-left: 1.5rem !important;
-                margin-top: 0.5rem !important;
-            }
-            #listaRecursos li {
-                border: none !important;
-                padding: 0 !important;
-                margin-bottom: 0.25rem !important;
-                display: list-item !important; /* Transforma em bullet points */
-                list-style-type: disc !important;
-                background: transparent !important;
-            }
-
             /* --- CORREÇÕES DE QUEBRA DE PÁGINA --- */
-            section, .group, textarea, ul {
+            section, .group, textarea {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
             }
@@ -161,21 +151,9 @@
                         <label class="block text-sm font-bold text-slate-700 mb-2">Objetivos Pedagógicos</label>
                         <textarea rows="4" placeholder="O que os alunos irão desenvolver hoje?" class="w-full px-4 py-3 rounded-2xl border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50/50"></textarea>
                     </section>
-                    
                     <section>
                         <label class="block text-sm font-bold text-slate-700 mb-2">Recursos Necessários</label>
-                        
-                        <div class="flex gap-2 mb-3 no-print">
-                            <input type="text" id="inputRecurso" placeholder="Ex: Kit LEGO, Tablets..." class="flex-1 px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50/50">
-                            <button type="button" onclick="adicionarRecurso()" class="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-sm font-bold">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                                </svg>
-                            </button>
-                        </div>
-                        
-                        <ul id="listaRecursos" class="space-y-2 text-slate-700">
-                            </ul>
+                        <textarea rows="4" placeholder="Ex: Kit LEGO, Tablets, Softwares, Componentes eletrônicos..." class="w-full px-4 py-3 rounded-2xl border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50/50"></textarea>
                     </section>
                 </div>
 
@@ -230,57 +208,9 @@
     </div>
 
     <script>
-        const inputRecurso = document.getElementById('inputRecurso');
-        const listaRecursos = document.getElementById('listaRecursos');
-
-        // Função para adicionar item na lista
-        function adicionarRecurso() {
-            const valor = inputRecurso.value.trim();
-            if (valor === '') return; // Não adiciona se estiver vazio
-
-            // Cria o elemento da lista (li)
-            const li = document.createElement('li');
-            li.className = 'flex justify-between items-center bg-white px-3 py-2 border border-slate-200 rounded-lg shadow-sm';
-            
-            // Cria o texto do recurso
-            const span = document.createElement('span');
-            span.className = 'font-medium';
-            span.textContent = valor;
-
-            // Cria o botão de remover (X)
-            const btnRemover = document.createElement('button');
-            btnRemover.type = 'button';
-            btnRemover.className = 'text-slate-400 hover:text-red-500 transition-colors no-print p-1';
-            btnRemover.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>';
-            
-            // Ação de remover o item
-            btnRemover.onclick = function() {
-                li.remove();
-            };
-
-            // Junta tudo e joga na tela
-            li.appendChild(span);
-            li.appendChild(btnRemover);
-            listaRecursos.appendChild(li);
-
-            // Limpa o campo para digitar o próximo
-            inputRecurso.value = '';
-            inputRecurso.focus();
-        }
-
-        // Permite adicionar o item apertando a tecla "Enter"
-        inputRecurso.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault(); // Evita que a página seja recarregada ao dar enter
-                adicionarRecurso();
-            }
-        });
-
-        // Modificado para apagar também a lista de recursos
         function clearForm() {
             if (confirm("Deseja apagar todos os dados digitados neste plano?")) {
                 document.getElementById('lessonPlanForm').reset();
-                document.getElementById('listaRecursos').innerHTML = ''; // Limpa os itens criados
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
