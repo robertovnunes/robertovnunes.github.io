@@ -10,14 +10,29 @@
         
         body { font-family: 'Inter', sans-serif; }
 
+        /* --- CONFIGURAÇÕES DE MARGEM DA FOLHA (IMPRESSORA) --- */
         @page {
-            margin: 0; 
+            /* Margens superior e inferior a partir da página 2 para o texto não cortar/colar na borda */
+            margin-top: 1.5cm;
+            margin-bottom: 1.5cm;
+            margin-left: 0;
+            margin-right: 0;
+        }
+
+        @page :first {
+            /* Na primeira página tiramos a margem física do topo, pois o 'padding' do body já fará esse papel */
+            margin-top: 0; 
         }
 
         @media print {
             .no-print { display: none !important; }
             
-            body { background-color: white !important; padding: 1.5cm !important; }
+            /* Ajustamos o padding (Top, Right, Bottom, Left) */
+            /* O topo tem 1.5cm apenas para a primeira página, e as laterais para todas as páginas */
+            body { 
+                background-color: white !important; 
+                padding: 1.5cm 1.5cm 0 1.5cm !important; 
+            }
             
             .print-container { 
                 box-shadow: none !important; 
@@ -44,19 +59,15 @@
             }
 
             /* --- CORREÇÕES DE QUEBRA DE PÁGINA --- */
-            
-            /* Evita que áreas de texto e grupos de conteúdo sejam cortados ao meio */
             section, .group, textarea {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
             }
 
-            /* Evita que o título (label) fique no fim da página 1 e o texto vá para a página 2 */
             h1, h2, h3, h4, label {
                 page-break-after: avoid !important;
                 break-after: avoid !important;
             }
-            /* ------------------------------------- */
         }
 
         .tech-gradient {
