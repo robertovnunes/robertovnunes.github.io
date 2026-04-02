@@ -10,7 +10,6 @@
         
         body { font-family: 'Inter', sans-serif; }
 
-        /* Remove as margens padrão do navegador (cabeçalhos e rodapés automáticos com URL/Data) */
         @page {
             margin: 0; 
         }
@@ -18,7 +17,6 @@
         @media print {
             .no-print { display: none !important; }
             
-            /* Adiciona um espaçamento para o conteúdo não ficar colado na borda física do papel */
             body { background-color: white !important; padding: 1.5cm !important; }
             
             .print-container { 
@@ -29,9 +27,8 @@
                 margin: 0 !important;
                 padding: 0 !important;
             }
-            .section-card { border: 1px solid #e2e8f0 !important; page-break-inside: avoid; }
+            .section-card { border: 1px solid #e2e8f0 !important; }
             
-            /* Remove as bordas dos campos para a impressão ficar com cara de documento de texto */
             textarea, input, select { 
                 border: none !important; 
                 resize: none !important; 
@@ -42,15 +39,28 @@
                 outline: none !important;
             }
 
-            /* Remove os fundos coloridos das textareas para economizar tinta e ficar mais limpo */
             .bg-slate-50\/50, .bg-blue-50, .bg-slate-50 {
                 background-color: transparent !important;
             }
+
+            /* --- CORREÇÕES DE QUEBRA DE PÁGINA --- */
+            
+            /* Evita que áreas de texto e grupos de conteúdo sejam cortados ao meio */
+            section, .group, textarea {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            /* Evita que o título (label) fique no fim da página 1 e o texto vá para a página 2 */
+            h1, h2, h3, h4, label {
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+            }
+            /* ------------------------------------- */
         }
 
         .tech-gradient {
             background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-            /* Força a impressão do gradiente de fundo no Chrome/Edge */
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
