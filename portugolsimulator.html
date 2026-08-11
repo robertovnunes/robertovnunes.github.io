@@ -15,6 +15,25 @@
         }
         .caixa-magica:hover { transform: translateY(-5px); }
         .etiqueta { background: repeating-linear-gradient(45deg, #fcd34d, #fcd34d 10px, #fbbf24 10px, #fbbf24 20px); }
+        
+        /* Estilos para o Syntax Highlighting funcionarem perfeitamente alinhados */
+        .editor-base {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.125rem;
+            line-height: 1.75rem;
+            padding: 1rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            tab-size: 4;
+            border: none;
+            margin: 0;
+        }
+        
+        /* Cor de seleção de texto transparente para não esconder as cores por trás */
+        #editor::selection {
+            background-color: rgba(52, 211, 153, 0.4); 
+            color: transparent;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8 min-h-screen flex flex-col">
@@ -36,13 +55,18 @@
                     <button onclick="limparCodigo()" class="bg-slate-400 hover:bg-slate-500 text-white font-bold py-2 px-5 rounded-full transform active:scale-95 transition-transform flex items-center gap-2 shadow-md">
                         <span>🗑️ Limpar</span>
                     </button>
-                    <button onclick="executarCodigo()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-6 rounded-full transform active:scale-95 transition-transform flex items-center gap-2 shadow-lg">
+                    <button id="btn-executar" onclick="executarCodigo()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-6 rounded-full transform active:scale-95 transition-transform flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
                         <span>▶️ Executar</span>
                     </button>
                 </div>
             </div>
             
-            <textarea id="editor" class="code-font w-full flex-grow bg-slate-900 text-emerald-300 p-4 rounded-xl text-lg focus:outline-none focus:ring-4 focus:ring-emerald-300 resize-none min-h-[300px]" spellcheck="false">Algoritmo "Jogo_de_Corrida"
+            <div class="relative w-full flex-grow min-h-[300px] bg-slate-900 rounded-xl overflow-hidden focus-within:ring-4 focus-within:ring-emerald-300 shadow-inner">
+                <!-- Camada de baixo: Onde as cores aparecem -->
+                <pre id="highlight-layer" class="editor-base absolute inset-0 text-emerald-300 pointer-events-none z-10 overflow-hidden" aria-hidden="true"></pre>
+                
+                <!-- Camada de cima: Onde o utilizador escreve (Texto transparente, cursor visível) -->
+                <textarea id="editor" class="editor-base absolute inset-0 w-full h-full bg-transparent text-transparent caret-white resize-none outline-none z-20" spellcheck="false" oninput="atualizarCores()" onscroll="sincronizarScroll()">Algoritmo "Jogo_de_Corrida"
 
 Variaveis
     pontos : numero
@@ -50,15 +74,18 @@ Variaveis
     nome_piloto : palavra
 
 Inicio
-    pontos <- 0
-    botao_turbo <- 'X'
-    nome_piloto <- "Roberto"
+    escrever("Qual é o nome do piloto?")
+    leia(nome_piloto)
+    
+    escrever("Qual botão ativa o turbo?")
+    leia(botao_turbo)
 
     pontos <- 100
 
     escrever("Parabéns, ", nome_piloto, "!")
     escrever("Você usou o botão ", botao_turbo, " e fez ", pontos, " pontos.")
 Fim</textarea>
+            </div>
         </section>
 
         <section class="flex-1 flex flex-col gap-6">
@@ -80,18 +107,93 @@ Fim</textarea>
     </main>
 
     <script>
+        
+        function atualizarCores() {
+            const editor = document.getElementById('editor');
+            const highlight = document.getElementById('highlight-layer');
+            let texto = editor.value;
+
+            // 1. Escapar HTML para não quebrar a página
+            texto = texto.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            // 2. Aplicar Cores com Regras (Regex)
+            // Strings ("texto" ou 'texto') -> Amarelo
+            texto = texto.replace(/(&quot;.*?&quot;|'.*?')/g, '<span class="text-yellow-300">$1</span>');
+            
+            // Palavras-chave (Algoritmo, Inicio, Fim, Variaveis, etc) -> Rosa
+            texto = texto.replace(/\b(Algoritmo|Variaveis|Inicio|Fim|escrever|leia)\b/gi, '<span class="text-pink-400 font-bold">$1</span>');
+            
+            // Tipos de dados (numero, letra, palavra) -> Azul Claro
+            texto = texto.replace(/\b(numero|letra|palavra)\b/gi, '<span class="text-sky-300 italic">$1</span>');
+            
+            // Operadores (<- e :) -> Roxo
+            texto = texto.replace(/(<-|:)/g, '<span class="text-purple-400 font-bold">$1</span>');
+            
+            // Comentários (// comentário) -> Cinzento
+            texto = texto.replace(/(\/\/.*)/g, '<span class="text-slate-400 italic">$1</span>');
+
+            // Corrige um bug do HTML onde a última quebra de linha é ignorada pelo <pre>
+            if(texto.endsWith('\n')) texto += ' ';
+
+            highlight.innerHTML = texto;
+        }
+
+        function sincronizarScroll() {
+            const editor = document.getElementById('editor');
+            const highlight = document.getElementById('highlight-layer');
+            // Quando a caixa de cima rolar, roda a camada de baixo junto!
+            highlight.scrollTop = editor.scrollTop;
+            highlight.scrollLeft = editor.scrollLeft;
+        }
+
+        // Executar a pintura na primeira vez que a página carrega
+        window.addEventListener('DOMContentLoaded', atualizarCores);
+
         // Função para limpar o editor de código, a memória e a saída do console
         function limparCodigo() {
             // Limpa o texto do editor
             document.getElementById('editor').value = '';
+            atualizarCores(); // Apaga também a camada das cores
             
             // Restaura as mensagens padrão
             document.getElementById('area-variaveis').innerHTML = '<p class="text-indigo-400 col-span-full text-center italic mt-4">Clique em executar para ver o computador a criar as caixas!</p>';
             document.getElementById('console-saida').innerHTML = 'A aguardar o seu comando...';
         }
 
+        // Função para pausar e pedir entrada de dados (simula a função leia)
+        function pedirInput(nomeVar) {
+            return new Promise(resolve => {
+                const consoleSaida = document.getElementById('console-saida');
+                const inputId = 'input-leia-' + Date.now();
+                
+                // Cria um campo de texto no Ecrã do Jogo
+                const inputHTML = `
+                    <div id="container-${inputId}" class="mt-2 flex items-center gap-2 text-emerald-300">
+                        <span>> Digite um valor para <strong>${nomeVar}</strong>:</span>
+                        <input type="text" id="${inputId}" class="bg-slate-800 text-emerald-300 px-3 py-1 rounded outline-none border border-emerald-500 animate-pulse focus:animate-none flex-grow" autocomplete="off">
+                    </div>
+                `;
+                consoleSaida.insertAdjacentHTML('beforeend', inputHTML);
+                
+                const inputElement = document.getElementById(inputId);
+                const btnExecutar = document.getElementById('btn-executar');
+                
+                inputElement.focus();
+                
+                // Fica à escuta da tecla Enter
+                inputElement.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        const valor = inputElement.value;
+                        document.getElementById(`container-${inputId}`).style.display = 'none'; // Esconde o input interativo
+                        consoleSaida.innerHTML += `<div>> ${valor}</div>`; // Mantém o registo do que foi digitado
+                        resolve(valor);
+                    }
+                });
+            });
+        }
+
         // Função principal que lê e interpreta o nosso Portugol simplificado
-        function executarCodigo() {
+        async function executarCodigo() {
             const codigo = document.getElementById('editor').value;
             const linhas = codigo.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('//'));
             
@@ -104,6 +206,9 @@ Fim</textarea>
             let modo = 'INICIO'; // Controla em que parte do algoritmo estamos
             let variaveis = {};
             let erros = [];
+
+            const btnExecutar = document.getElementById('btn-executar');
+            if(btnExecutar) btnExecutar.disabled = true; // Bloqueia o botão enquanto corre
 
             try {
                 for (let linha of linhas) {
@@ -181,6 +286,27 @@ Fim</textarea>
                             consoleSaida.innerHTML += textoFinal + "<br>";
                             comandoReconhecido = true;
                         }
+                        // Comando de ler do teclado (Ex: leia(nome_piloto))
+                        else if (linhaLower.startsWith('leia(')) {
+                            let nomeVar = linha.substring(linha.indexOf('(') + 1, linha.lastIndexOf(')')).trim();
+                            
+                            if (variaveis[nomeVar]) {
+                                // Pausa a execução do código até o utilizador carregar no Enter
+                                let valorDigitado = await pedirInput(nomeVar);
+                                
+                                // Limpa possíveis aspas caso o utilizador as digite
+                                let valorLimpo = valorDigitado;
+                                if (variaveis[nomeVar].tipo === 'letra') valorLimpo = valorDigitado.replace(/'/g, "");
+                                if (variaveis[nomeVar].tipo === 'palavra') valorLimpo = valorDigitado.replace(/"/g, "");
+
+                                // Guarda na caixa mágica e atualiza a imagem
+                                variaveis[nomeVar].valor = valorLimpo;
+                                desenharCaixas(variaveis);
+                            } else {
+                                throw new Error(`Tentou ler dados para a caixa "${nomeVar}", mas ela não foi criada!`);
+                            }
+                            comandoReconhecido = true;
+                        }
                     }
 
                     // Se a linha não for em branco, não for comentário e não foi reconhecida, dá um aviso!
@@ -192,6 +318,8 @@ Fim</textarea>
                 // Se o professor ou o aluno errar alguma coisa, mostramos de forma amigável
                 consoleSaida.innerHTML += `<span class="text-red-500">❌ OOPS! Encontrei um inseto (bug):<br>${erro.message}</span>`;
             }
+
+            if(btnExecutar) btnExecutar.disabled = false; // Desbloqueia o botão no fim
         }
 
         function desenharCaixas(vars) {
