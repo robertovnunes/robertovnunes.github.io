@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Portugol: Caixas Mágicas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f0fdf4; }
+        .code-font { font-family: 'Fira Code', monospace; }
+        .caixa-magica {
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .caixa-magica:hover { transform: translateY(-5px); }
+        .etiqueta { background: repeating-linear-gradient(45deg, #fcd34d, #fcd34d 10px, #fbbf24 10px, #fbbf24 20px); }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex flex-col">
+
+    <header class="text-center mb-8">
+        <h1 class="text-4xl font-extrabold text-emerald-600 mb-2">💻 Simulador de Caixas Mágicas</h1>
+        <p class="text-slate-600 text-lg">Escreva o seu Portugol e veja o computador a arrumar as variáveis!</p>
+    </header>
+
+    <main class="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto w-full flex-grow">
+        
+        <!-- Coluna da Esquerda: Editor de Código -->
+        <section class="flex-1 bg-white rounded-2xl p-4 border-4 border-slate-200 shadow-xl flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b-2 border-slate-100 pb-2">
+                <h2 class="text-xl font-bold text-slate-700">📝 O Seu Código (Portugol)</h2>
+                
+                <!-- Agrupamento de botões (Limpar e Executar) -->
+                <div class="flex gap-3">
+                    <button onclick="limparCodigo()" class="bg-slate-400 hover:bg-slate-500 text-white font-bold py-2 px-5 rounded-full transform active:scale-95 transition-transform flex items-center gap-2 shadow-md">
+                        <span>🗑️ Limpar</span>
+                    </button>
+                    <button onclick="executarCodigo()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-6 rounded-full transform active:scale-95 transition-transform flex items-center gap-2 shadow-lg">
+                        <span>▶️ Executar</span>
+                    </button>
+                </div>
+            </div>
+            
+            <textarea id="editor" class="code-font w-full flex-grow bg-slate-900 text-emerald-300 p-4 rounded-xl text-lg focus:outline-none focus:ring-4 focus:ring-emerald-300 resize-none min-h-[300px]" spellcheck="false">Algoritmo "Jogo_de_Corrida"
+
+Variaveis
+    pontos : numero
+    botao_turbo : letra
+    nome_piloto : palavra
+
+Inicio
+    pontos <- 0
+    botao_turbo <- 'X'
+    nome_piloto <- "Roberto"
+
+    pontos <- 100
+
+    escrever("Parabéns, ", nome_piloto, "!")
+    escrever("Você usou o botão ", botao_turbo, " e fez ", pontos, " pontos.")
+Fim</textarea>
+        </section>
+
+        <section class="flex-1 flex flex-col gap-6">
+            
+            <!-- Painel das Caixas Mágicas (Variáveis) -->
+            <div class="bg-indigo-50 rounded-2xl p-6 border-4 border-indigo-200 shadow-xl min-h-[200px]">
+                <h2 class="text-xl font-bold text-indigo-800 mb-4 flex items-center gap-2">📦 A Cabeça do Computador (Memória)</h2>
+                <div id="area-variaveis" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <p class="text-indigo-400 col-span-full text-center italic mt-4">Clique em executar para ver o computador a criar as caixas!</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 rounded-2xl p-6 border-4 border-slate-700 shadow-xl flex-grow flex flex-col">
+                <h2 class="text-xl font-bold text-slate-200 mb-4 flex items-center gap-2">📺 Ecrã do Jogo</h2>
+                <div id="console-saida" class="code-font flex-grow bg-black rounded-lg p-4 text-emerald-400 text-lg overflow-y-auto whitespace-pre-wrap">A aguardar o seu comando...</div>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        // Função para limpar o editor de código, a memória e a saída do console
+        function limparCodigo() {
+            // Limpa o texto do editor
+            document.getElementById('editor').value = '';
+            
+            // Restaura as mensagens padrão
+            document.getElementById('area-variaveis').innerHTML = '<p class="text-indigo-400 col-span-full text-center italic mt-4">Clique em executar para ver o computador a criar as caixas!</p>';
+            document.getElementById('console-saida').innerHTML = 'A aguardar o seu comando...';
+        }
+
+        // Função principal que lê e interpreta o nosso Portugol simplificado
+        function executarCodigo() {
+            const codigo = document.getElementById('editor').value;
+            const linhas = codigo.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('//'));
+            
+            const areaVariaveis = document.getElementById('area-variaveis');
+            const consoleSaida = document.getElementById('console-saida');
+            
+            areaVariaveis.innerHTML = '';
+            consoleSaida.innerHTML = '';
+            
+            let modo = 'INICIO'; // Controla em que parte do algoritmo estamos
+            let variaveis = {};
+            let erros = [];
+
+            try {
+                for (let linha of linhas) {
+                    let linhaLower = linha.toLowerCase();
+                    
+                    if (linhaLower.startsWith('algoritmo')) continue;
+                    if (linhaLower === 'variaveis') { modo = 'DECLARACAO'; continue; }
+                    if (linhaLower === 'inicio') { modo = 'EXECUCAO'; continue; }
+                    if (linhaLower === 'fim') { break; }
+
+                    let comandoReconhecido = false; // Variável para vigiar se o computador entendeu a linha
+
+                    if (modo === 'DECLARACAO') {
+                        // Exemplo: pontos : numero
+                        if (linha.includes(':')) {
+                            let partes = linha.split(':');
+                            let nomeVar = partes[0].trim();
+                            let tipoVar = partes[1].trim().toLowerCase();
+                            
+                            // Valida se a criança usou apenas os 3 tipos que ensinamos
+                            if (!['numero', 'letra', 'palavra'].includes(tipoVar)) {
+                                throw new Error(`O computador não conhece o tipo "${tipoVar}". Ele só conhece: numero, letra e palavra!`);
+                            }
+
+                            // Cria a "Caixa Mágica" vazia (null significa vazia aqui)
+                            variaveis[nomeVar] = { tipo: tipoVar, valor: '???' };
+                            desenharCaixas(variaveis); // Atualiza a imagem na hora
+                            comandoReconhecido = true;
+                        }
+                    } 
+                    else if (modo === 'EXECUCAO') {
+                        // Atribuição de valor (Ex: pontos <- 100)
+                        if (linha.includes('<-')) {
+                            let partes = linha.split('<-');
+                            let nomeVar = partes[0].trim();
+                            let valorBruto = partes[1].trim();
+                            
+                            if (variaveis[nomeVar]) {
+                                let valorLimpo = valorBruto;
+                                // Limpa as aspas simples e duplas para guardar apenas o valor puro
+                                if (variaveis[nomeVar].tipo === 'letra') valorLimpo = valorBruto.replace(/'/g, "");
+                                if (variaveis[nomeVar].tipo === 'palavra') valorLimpo = valorBruto.replace(/"/g, "");
+                                
+                                variaveis[nomeVar].valor = valorLimpo;
+                                desenharCaixas(variaveis); // Atualiza a caixa com o novo valor!
+                            } else {
+                                throw new Error(`Tentou usar a caixa "${nomeVar}", mas ela não foi criada!`);
+                            }
+                            comandoReconhecido = true;
+                        } 
+                        // Comando de escrever na tela (Ex: escrever("Olá, ", nome))
+                        else if (linhaLower.startsWith('escrever(')) {
+                            // Extrai tudo que está dentro dos parênteses
+                            let conteudo = linha.substring(linha.indexOf('(') + 1, linha.lastIndexOf(')'));
+                            
+                            // O Regex ajuda a separar as coisas mantendo as aspas juntas!
+                            let partesParaEscrever = conteudo.match(/("[^"]*")|('[^']*')|([a-zA-Z_]\w*)/g);
+                            
+                            let textoFinal = "";
+                            if (partesParaEscrever) {
+                                for (let parte of partesParaEscrever) {
+                                    if (parte.startsWith('"') || parte.startsWith("'")) {
+                                        // É um texto normal, tira as aspas e junta
+                                        textoFinal += parte.replace(/["']/g, "");
+                                    } else {
+                                        // É o nome de uma variável! Pega o valor de dentro da caixa!
+                                        if (variaveis[parte]) {
+                                            textoFinal += variaveis[parte].valor;
+                                        } else {
+                                            throw new Error(`Tentou escrever a variável "${parte}", mas ela não existe.`);
+                                        }
+                                    }
+                                }
+                            }
+                            consoleSaida.innerHTML += textoFinal + "<br>";
+                            comandoReconhecido = true;
+                        }
+                    }
+
+                    // Se a linha não for em branco, não for comentário e não foi reconhecida, dá um aviso!
+                    if (!comandoReconhecido) {
+                        throw new Error(`O computador ficou confuso com a linha: <strong>"${linha}"</strong>. Verifique se escreveu o comando corretamente!`);
+                    }
+                }
+            } catch (erro) {
+                // Se o professor ou o aluno errar alguma coisa, mostramos de forma amigável
+                consoleSaida.innerHTML += `<span class="text-red-500">❌ OOPS! Encontrei um inseto (bug):<br>${erro.message}</span>`;
+            }
+        }
+
+        function desenharCaixas(vars) {
+            const area = document.getElementById('area-variaveis');
+            area.innerHTML = ''; // Limpa para desenhar novamente
+            
+            for (const [nome, dados] of Object.entries(vars)) {
+                // Escolhe um ícone dependendo do tipo da variável para ajudar visualmente a criança
+                let icone = '🔢';
+                if (dados.tipo === 'letra') icone = '🔤';
+                if (dados.tipo === 'palavra') icone = '🏷️';
+
+                const htmlCaixa = `
+                    <div class="caixa-magica bg-white rounded-xl overflow-hidden border-2 border-slate-200 flex flex-col h-28">
+                        <div class="etiqueta px-3 py-2 text-xs font-bold text-slate-800 uppercase text-center border-b-2 border-slate-200">
+                            ${icone} ${nome}
+                        </div>
+                        <div class="flex-grow flex items-center justify-center p-2 bg-slate-50">
+                            <span class="font-bold text-xl ${dados.valor === '???' ? 'text-slate-300' : 'text-indigo-600'}">
+                                ${dados.valor}
+                            </span>
+                        </div>
+                    </div>
+                `;
+                area.innerHTML += htmlCaixa;
+            }
+        }
+    </script>
+</body>
+</html>
