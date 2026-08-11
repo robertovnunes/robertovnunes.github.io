@@ -146,8 +146,31 @@ Fim</textarea>
             highlight.scrollLeft = editor.scrollLeft;
         }
 
-        // Executar a pintura na primeira vez que a página carrega
-        window.addEventListener('DOMContentLoaded', atualizarCores);
+        // Executar a pintura e configurar eventos na primeira vez que a página carrega
+        window.addEventListener('DOMContentLoaded', function() {
+            atualizarCores();
+
+            // Adiciona a funcionalidade de "Tabulação" (Tab) no editor de código
+            const editor = document.getElementById('editor');
+            editor.addEventListener('keydown', function(e) {
+                if (e.key === 'Tab') {
+                    e.preventDefault(); // Evita que o navegador mude o foco para outro botão
+                    
+                    const inicio = this.selectionStart;
+                    const fim = this.selectionEnd;
+                    
+                    // Inserir 4 espaços no lugar do texto selecionado ou na posição do cursor
+                    const tab = "    ";
+                    this.value = this.value.substring(0, inicio) + tab + this.value.substring(fim);
+                    
+                    // Move o cursor para a frente dos 4 espaços inseridos
+                    this.selectionStart = this.selectionEnd = inicio + tab.length;
+                    
+                    // Atualiza as cores imediatamente para não quebrar a ilusão de ótica do código
+                    atualizarCores();
+                }
+            });
+        });
 
         // Função para limpar o editor de código, a memória e a saída do console
         function limparCodigo() {
