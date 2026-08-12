@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de Portugol</title>
+    <title>Portugol Simulator: Caixas Mágicas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
     <style>
@@ -16,23 +16,17 @@
         .caixa-magica:hover { transform: translateY(-5px); }
         .etiqueta { background: repeating-linear-gradient(45deg, #fcd34d, #fcd34d 10px, #fbbf24 10px, #fbbf24 20px); }
         
-        /* Estilos para o Syntax Highlighting funcionarem perfeitamente alinhados */
+        /* Configuração para sincronizar a camada de texto transparente e o destaque de sintaxe */
         .editor-base {
             font-family: 'Fira Code', monospace;
             font-size: 1.125rem;
             line-height: 1.75rem;
             padding: 1rem;
+            margin: 0;
+            border: none;
             white-space: pre-wrap;
             word-wrap: break-word;
             tab-size: 4;
-            border: none;
-            margin: 0;
-        }
-        
-        /* Cor de seleção de texto transparente para não esconder as cores por trás */
-        #editor::selection {
-            background-color: rgba(52, 211, 153, 0.4); 
-            color: transparent;
         }
     </style>
 </head>
@@ -48,28 +42,32 @@
         <!-- Coluna da Esquerda: Editor de Código -->
         <section class="flex-1 bg-white rounded-2xl p-4 border-4 border-slate-200 shadow-xl flex flex-col">
             <div class="flex justify-between items-center mb-4 border-b-2 border-slate-100 pb-2">
-                <h2 class="text-xl font-bold text-slate-700">📝 O Seu Código (Portugol)</h2>
-                
-                <!-- Agrupamento de botões (Limpar e Executar) -->
+                <h2 class="text-xl font-bold text-slate-700">📝 Editor de código</h2>
                 <div class="flex gap-2">
-                    <button onclick="limparCodigo()" class="bg-slate-400 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-full transform active:scale-95 transition-transform flex items-center gap-2 shadow-md text-sm">
-                        <span>🗑️ Limpar Código</span>
+                    <button id="btn-undo" onclick="desfazer()" title="Desfazer (Ctrl+Z)" disabled class="bg-slate-200 hover:bg-slate-300 disabled:opacity-40 text-slate-700 font-bold p-2.5 rounded-full transition-transform active:scale-95 text-lg">
+                        ↩️
                     </button>
-                    <button onclick="limparMemoria()" class="bg-indigo-400 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-full transform active:scale-95 transition-transform flex items-center gap-2 shadow-md text-sm">
-                        <span>🧹 Limpar Memória</span>
+                    <button id="btn-redo" onclick="refazer()" title="Refazer (Ctrl+Y)" disabled class="bg-slate-200 hover:bg-slate-300 disabled:opacity-40 text-slate-700 font-bold p-2.5 rounded-full transition-transform active:scale-95 text-lg">
+                        ↪️
                     </button>
-                    <button id="btn-executar" onclick="executarCodigo()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-5 rounded-full transform active:scale-95 transition-transform flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                    <button onclick="limparMemoria()" title="Limpar Memória e Saída" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold p-2.5 rounded-full transition-transform active:scale-95 text-lg shadow-md">
+                        🧹
+                    </button>
+                    <button onclick="limparCodigo()" title="Limpar Código" class="bg-slate-500 hover:bg-slate-600 text-white font-bold p-2.5 rounded-full transition-transform active:scale-95 text-lg shadow-md">
+                        🗑️
+                    </button>
+                    <button id="btn-executar" onclick="executarCodigo()" title="Executar Código" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 rounded-full transition-transform active:scale-95 flex items-center gap-1 shadow-md">
                         <span>▶️ Executar</span>
                     </button>
                 </div>
             </div>
-            
-            <div class="relative w-full flex-grow min-h-[300px] bg-slate-900 rounded-xl overflow-hidden focus-within:ring-4 focus-within:ring-emerald-300 shadow-inner">
-                <!-- Camada de baixo: Onde as cores aparecem -->
-                <pre id="highlight-layer" class="editor-base absolute inset-0 text-emerald-300 pointer-events-none z-10 overflow-hidden" aria-hidden="true"></pre>
+
+            <div class="relative flex-grow bg-slate-900 rounded-xl overflow-hidden min-h-[350px] focus-within:ring-4 focus-within:ring-emerald-300">
+                <!-- Camada que mostra as cores (fica por baixo) -->
+                <pre id="highlight-layer" class="editor-base absolute inset-0 w-full h-full overflow-y-auto text-slate-100 pointer-events-none" aria-hidden="true"></pre>
                 
-                <!-- Camada de cima: Onde o utilizador escreve (Texto transparente, cursor visível) -->
-                <textarea id="editor" class="editor-base absolute inset-0 w-full h-full bg-transparent text-transparent caret-white resize-none outline-none z-20" spellcheck="false" oninput="atualizarCores()" onscroll="sincronizarScroll()">Algoritmo "Jogo_de_Corrida"
+                <!-- Camada onde o utilizador escreve (fica por cima e transparente) -->
+                <textarea id="editor" class="editor-base absolute inset-0 w-full h-full bg-transparent text-transparent caret-emerald-300 resize-none outline-none" spellcheck="false" oninput="atualizarCores(); agendarSalvamento()" onscroll="sincronizarScroll()">Algoritmo "Jogo_de_Corrida"
 
 Variaveis
     pontos : numero
@@ -97,42 +95,159 @@ Fim</textarea>
                 </div>
             </div>
 
+            <!-- Saída do Simulador -->
             <div class="bg-slate-800 rounded-2xl p-6 border-4 border-slate-700 shadow-xl flex-grow flex flex-col">
                 <h2 class="text-xl font-bold text-slate-200 mb-4 flex items-center gap-2">📺 Saída</h2>
-                <div id="console-saida" class="code-font flex-grow bg-black rounded-lg p-4 text-emerald-400 text-lg overflow-y-auto whitespace-pre-wrap">A aguardar o seu comando...</div>
+                <div id="console-saida" class="code-font flex-grow bg-black rounded-lg p-4 text-emerald-400 text-lg overflow-y-auto whitespace-pre-wrap min-h-[150px]">A aguardar o seu comando...</div>
             </div>
 
         </section>
     </main>
 
     <script>
-        
+        let historico = [];
+        let posicaoHistorico = -1;
+        let temporizadorSalvar = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const editor = document.getElementById('editor');
+            if (editor) {
+                salvarEstado();
+                atualizarCores();
+
+                // Atalho para Tabulação (Tab), Indentação Automática (Enter) e Undo/Redo pelo teclado
+                editor.addEventListener('keydown', (e) => {
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        const start = editor.selectionStart;
+                        const end = editor.selectionEnd;
+                        editor.value = editor.value.substring(0, start) + '    ' + editor.value.substring(end);
+                        editor.selectionStart = editor.selectionEnd = start + 4;
+                        atualizarCores();
+                        agendarSalvamento();
+                    }
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const start = editor.selectionStart;
+                        const end = editor.selectionEnd;
+                        const val = editor.value;
+
+                        // Obtém a linha atual onde o cursor está antes de mudar de linha
+                        const lastNewline = val.lastIndexOf('\n', start - 1);
+                        const lineBeforeCursor = val.substring(lastNewline + 1, start);
+
+                        // Mantém a mesma indentação (espaços no início da linha)
+                        const indentMatch = lineBeforeCursor.match(/^(\s*)/);
+                        let currentIndent = indentMatch ? indentMatch[1] : '';
+
+                        // Verifica se a linha abre um novo bloco de código para aumentar a indentação
+                        const lineTrimmed = lineBeforeCursor.trim().toLowerCase();
+                        const blockKeywords = ['variaveis', 'inicio', 'senao', 'escolha', 'caso', 'outrocaso'];
+                        
+                        let extraIndent = '';
+                        if (blockKeywords.includes(lineTrimmed) || lineTrimmed.endsWith('entao')) {
+                            extraIndent = '    ';
+                        }
+
+                        const insertion = '\n' + currentIndent + extraIndent;
+                        editor.value = val.substring(0, start) + insertion + val.substring(end);
+                        editor.selectionStart = editor.selectionEnd = start + insertion.length;
+
+                        atualizarCores();
+                        agendarSalvamento();
+                    }
+                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+                        if (e.shiftKey) {
+                            e.preventDefault();
+                            refazer();
+                        } else {
+                            e.preventDefault();
+                            desfazer();
+                        }
+                    }
+                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+                        e.preventDefault();
+                        refazer();
+                    }
+                });
+            }
+        });
+
+        function agendarSalvamento() {
+            clearTimeout(temporizadorSalvar);
+            temporizadorSalvar = setTimeout(salvarEstado, 400);
+        }
+
+        function salvarEstado() {
+            const editor = document.getElementById('editor');
+            if (!editor) return;
+            const val = editor.value;
+            if (posicaoHistorico >= 0 && historico[posicaoHistorico] === val) return;
+            
+            historico = historico.slice(0, posicaoHistorico + 1);
+            historico.push(val);
+            posicaoHistorico = historico.length - 1;
+            atualizarBotoesUndoRedo();
+        }
+
+        function desfazer() {
+            if (posicaoHistorico > 0) {
+                posicaoHistorico--;
+                const editor = document.getElementById('editor');
+                editor.value = historico[posicaoHistorico];
+                atualizarCores();
+                atualizarBotoesUndoRedo();
+            }
+        }
+
+        function refazer() {
+            if (posicaoHistorico < historico.length - 1) {
+                posicaoHistorico++;
+                const editor = document.getElementById('editor');
+                editor.value = historico[posicaoHistorico];
+                atualizarCores();
+                atualizarBotoesUndoRedo();
+            }
+        }
+
+        function atualizarBotoesUndoRedo() {
+            const btnUndo = document.getElementById('btn-undo');
+            const btnRedo = document.getElementById('btn-redo');
+            if (btnUndo) btnUndo.disabled = (posicaoHistorico <= 0);
+            if (btnRedo) btnRedo.disabled = (posicaoHistorico >= historico.length - 1);
+        }
+
         function atualizarCores() {
             const editor = document.getElementById('editor');
             const highlight = document.getElementById('highlight-layer');
+            if (!editor || !highlight) return;
+            
             let texto = editor.value;
 
-            // 1. Escapar HTML para não quebrar a página
-            texto = texto.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            // 1. Escapar caracteres HTML especiais
+            texto = texto
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
 
-            // 2. Aplicar Cores com Regras (Regex)
-            // Strings ("texto" ou 'texto') -> Amarelo
-            texto = texto.replace(/(&quot;.*?&quot;|'.*?')/g, '<span class="text-yellow-300">$1</span>');
+            // 2. Destacar Strings ("texto" ou 'texto') -> Amarelo
+            texto = texto.replace(/("[^"]*"|'[^']*')/g, '<span class="text-yellow-300">$1</span>');
             
-            // Palavras-chave (Algoritmo, Inicio, Fim, Variaveis, etc) -> Rosa
-            texto = texto.replace(/\b(Algoritmo|Variaveis|Inicio|Fim|escrever|leia)\b/gi, '<span class="text-pink-400 font-bold">$1</span>');
+            // 3. Palavras-chave -> Rosa
+            texto = texto.replace(/\b(Algoritmo|Variaveis|Inicio|Fim|escrever|leia|se|entao|senao|fimse|escolha|caso|outrocaso|fimescolha)\b/gi, '<span class="text-pink-400 font-bold">$1</span>');
             
-            // Tipos de dados (numero, letra, palavra) -> Azul Claro
+            // 4. Tipos de dados -> Azul Claro
             texto = texto.replace(/\b(numero|letra|palavra)\b/gi, '<span class="text-sky-300 italic">$1</span>');
             
-            // Operadores (<- e :) -> Roxo
-            texto = texto.replace(/(<-|:)/g, '<span class="text-purple-400 font-bold">$1</span>');
+            // 5. Operadores (<- e :) -> Roxo (&lt;- e :)
+            texto = texto.replace(/(&lt;-|:)/g, '<span class="text-purple-400 font-bold">$1</span>');
             
-            // Comentários (// comentário) -> Cinzento
+            // 6. Comentários (// comentário) -> Cinzento
             texto = texto.replace(/(\/\/.*)/g, '<span class="text-slate-400 italic">$1</span>');
 
-            // Corrige um bug do HTML onde a última quebra de linha é ignorada pelo <pre>
-            if(texto.endsWith('\n')) texto += ' ';
+            if (texto.endsWith('\n')) {
+                texto += ' ';
+            }
 
             highlight.innerHTML = texto;
         }
@@ -140,167 +255,267 @@ Fim</textarea>
         function sincronizarScroll() {
             const editor = document.getElementById('editor');
             const highlight = document.getElementById('highlight-layer');
-            // Quando a caixa de cima rolar, roda a camada de baixo junto!
-            highlight.scrollTop = editor.scrollTop;
-            highlight.scrollLeft = editor.scrollLeft;
+            if (editor && highlight) {
+                highlight.scrollTop = editor.scrollTop;
+                highlight.scrollLeft = editor.scrollLeft;
+            }
         }
 
-        // Executar a pintura e configurar eventos na primeira vez que a página carrega
-        window.addEventListener('DOMContentLoaded', function() {
-            atualizarCores();
-
-            // Adiciona a funcionalidade de "Tabulação" (Tab) no editor de código
-            const editor = document.getElementById('editor');
-            editor.addEventListener('keydown', function(e) {
-                if (e.key === 'Tab') {
-                    e.preventDefault(); // Evita que o navegador mude o foco para outro botão
-                    
-                    const inicio = this.selectionStart;
-                    const fim = this.selectionEnd;
-                    
-                    // Inserir 4 espaços no lugar do texto selecionado ou na posição do cursor
-                    const tab = "    ";
-                    this.value = this.value.substring(0, inicio) + tab + this.value.substring(fim);
-                    
-                    // Move o cursor para a frente dos 4 espaços inseridos
-                    this.selectionStart = this.selectionEnd = inicio + tab.length;
-                    
-                    // Atualiza as cores imediatamente para não quebrar a ilusão de ótica do código
-                    atualizarCores();
-                }
-            });
-        });
-
-        // Função para limpar o editor de código, a memória e a saída do console
         function limparCodigo() {
-            // Limpa o texto do editor
-            document.getElementById('editor').value = '';
-            atualizarCores(); // Apaga também a camada das cores
-            
-            limparMemoria(); // Reaproveita a função de limpar a memória
+            const editor = document.getElementById('editor');
+            if (editor) {
+                editor.value = '';
+                atualizarCores();
+                salvarEstado();
+            }
+            limparMemoria();
         }
 
-        // Função para limpar apenas a memória e a saída do ecrã de jogo
         function limparMemoria() {
-            document.getElementById('area-variaveis').innerHTML = '<p class="text-indigo-400 col-span-full text-center italic mt-4">Clique em executar para ver o computador a criar as caixas!</p>';
-            document.getElementById('console-saida').innerHTML = 'A aguardar o seu comando...';
+            const areaVariaveis = document.getElementById('area-variaveis');
+            const consoleSaida = document.getElementById('console-saida');
+            if (areaVariaveis) {
+                areaVariaveis.innerHTML = '<p class="text-indigo-400 col-span-full text-center italic mt-4">Clique em executar para ver o computador a criar as caixas!</p>';
+            }
+            if (consoleSaida) {
+                consoleSaida.innerHTML = 'A aguardar o seu comando...';
+            }
         }
 
-        // Função para pausar e pedir entrada de dados (simula a função leia)
         function pedirInput(nomeVar) {
-            return new Promise(resolve => {
+            return new Promise((resolve) => {
                 const consoleSaida = document.getElementById('console-saida');
-                const inputId = 'input-leia-' + Date.now();
                 
-                // Cria um campo de texto no Ecrã do Jogo
-                const inputHTML = `
-                    <div id="container-${inputId}" class="mt-2 flex items-center gap-2 text-emerald-300">
-                        <span>> Digite um valor para <strong>${nomeVar}</strong>:</span>
-                        <input type="text" id="${inputId}" class="bg-slate-800 text-emerald-300 px-3 py-1 rounded outline-none border border-emerald-500 animate-pulse focus:animate-none flex-grow" autocomplete="off">
-                    </div>
-                `;
-                consoleSaida.insertAdjacentHTML('beforeend', inputHTML);
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-center gap-2 my-1 text-emerald-300';
                 
-                const inputElement = document.getElementById(inputId);
-                const btnExecutar = document.getElementById('btn-executar');
+                const label = document.createElement('span');
+                label.textContent = `Digite um valor para ${nomeVar}: `;
                 
-                inputElement.focus();
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'bg-slate-900 border border-emerald-500 rounded px-2 py-1 text-emerald-300 outline-none focus:ring-2 focus:ring-emerald-400 code-font flex-grow';
                 
-                // Fica à escuta da tecla Enter
-                inputElement.addEventListener('keypress', function(e) {
+                wrapper.appendChild(label);
+                wrapper.appendChild(input);
+                consoleSaida.appendChild(wrapper);
+                consoleSaida.scrollTop = consoleSaida.scrollHeight;
+                
+                input.focus();
+                
+                input.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
-                        const valor = inputElement.value;
-                        document.getElementById(`container-${inputId}`).style.display = 'none'; // Esconde o input interativo
-                        consoleSaida.innerHTML += `<div>> ${valor}</div>`; // Mantém o registo do que foi digitado
+                        const valor = input.value;
+                        wrapper.innerHTML = `<span class="text-emerald-400"><strong>&gt; ${nomeVar}:</strong> ${valor}</span>`;
                         resolve(valor);
                     }
                 });
             });
         }
 
-        // Função principal que lê e interpreta o nosso Portugol simplificado
+        function evalCondicao(condStr, variaveis) {
+            let expr = condStr.trim();
+            for (const [nome, dados] of Object.entries(variaveis)) {
+                const regex = new RegExp(`\\b${nome}\\b`, 'g');
+                let valStr = dados.valor;
+                if (dados.tipo === 'numero') {
+                    if (valStr === '???') valStr = '0';
+                } else {
+                    valStr = `"${valStr}"`;
+                }
+                expr = expr.replace(regex, valStr);
+            }
+            expr = expr.replace(/<>/g, '!=').replace(/=/g, '==');
+            try {
+                return Function(`"use strict"; return (${expr})`)();
+            } catch (e) {
+                return false;
+            }
+        }
+
         async function executarCodigo() {
-            const codigo = document.getElementById('editor').value;
-            const linhas = codigo.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('//'));
-            
+            const editor = document.getElementById('editor');
             const areaVariaveis = document.getElementById('area-variaveis');
             const consoleSaida = document.getElementById('console-saida');
+            const btnExecutar = document.getElementById('btn-executar');
+            
+            if (!editor || !areaVariaveis || !consoleSaida) return;
+            
+            if (btnExecutar) btnExecutar.disabled = true;
+            
+            const codigo = editor.value;
+            const linhas = codigo.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('//'));
             
             areaVariaveis.innerHTML = '';
             consoleSaida.innerHTML = '';
             
-            let modo = 'INICIO'; // Controla em que parte do algoritmo estamos
+            let modo = 'INICIO';
             let variaveis = {};
-            let erros = [];
-
-            const btnExecutar = document.getElementById('btn-executar');
-            if(btnExecutar) btnExecutar.disabled = true; // Bloqueia o botão enquanto corre
+            let blockStack = [];
+            
+            function shouldExecute() {
+                return blockStack.every(b => b.executeNext);
+            }
 
             try {
-                for (let linha of linhas) {
+                for (let i = 0; i < linhas.length; i++) {
+                    let linha = linhas[i];
                     let linhaLower = linha.toLowerCase();
                     
                     if (linhaLower.startsWith('algoritmo')) continue;
                     if (linhaLower === 'variaveis') { modo = 'DECLARACAO'; continue; }
                     if (linhaLower === 'inicio') { modo = 'EXECUCAO'; continue; }
                     if (linhaLower === 'fim') { break; }
-
-                    let comandoReconhecido = false; // Variável para vigiar se o computador entendeu a linha
+                    
+                    let comandoReconhecido = false;
 
                     if (modo === 'DECLARACAO') {
-                        // Exemplo: pontos : numero
                         if (linha.includes(':')) {
                             let partes = linha.split(':');
                             let nomeVar = partes[0].trim();
                             let tipoVar = partes[1].trim().toLowerCase();
                             
-                            // Valida se a criança usou apenas os 3 tipos que ensinamos
                             if (!['numero', 'letra', 'palavra'].includes(tipoVar)) {
-                                throw new Error(`O computador não conhece o tipo "${tipoVar}". Ele só conhece: numero, letra e palavra!`);
+                                throw new Error(`O computador não conhece o tipo "${tipoVar}". Use: numero, letra ou palavra!`);
                             }
 
-                            // Cria a "Caixa Mágica" vazia (null significa vazia aqui)
                             variaveis[nomeVar] = { tipo: tipoVar, valor: '???' };
-                            desenharCaixas(variaveis); // Atualiza a imagem na hora
+                            desenharCaixas(variaveis);
                             comandoReconhecido = true;
                         }
                     } 
                     else if (modo === 'EXECUCAO') {
-                        // Atribuição de valor (Ex: pontos <- 100)
-                        if (linha.includes('<-')) {
+                        // Estrutura de condição 'se ... entao'
+                        if (linhaLower.startsWith('se ') && linhaLower.includes('entao')) {
+                            comandoReconhecido = true;
+                            if (!shouldExecute()) {
+                                blockStack.push({ type: 'se', executeNext: false, matched: true });
+                                continue;
+                            }
+                            let match = linha.match(/^se\s+(.+)\s+entao$/i);
+                            let condText = match ? match[1] : '';
+                            let condResult = evalCondicao(condText, variaveis);
+                            blockStack.push({ type: 'se', executeNext: condResult, matched: condResult });
+                            continue;
+                        }
+                        
+                        if (linhaLower === 'senao') {
+                            comandoReconhecido = true;
+                            if (blockStack.length > 0 && blockStack[blockStack.length - 1].type === 'se') {
+                                let currentBlock = blockStack[blockStack.length - 1];
+                                let parentExec = blockStack.slice(0, -1).every(b => b.executeNext);
+                                currentBlock.executeNext = parentExec && !currentBlock.matched;
+                            }
+                            continue;
+                        }
+                        
+                        if (linhaLower === 'fimse') {
+                            comandoReconhecido = true;
+                            if (blockStack.length > 0 && blockStack[blockStack.length - 1].type === 'se') {
+                                blockStack.pop();
+                            }
+                            continue;
+                        }
+                        
+                        // Estrutura de escolha ... caso
+                        if (linhaLower.startsWith('escolha ')) {
+                            comandoReconhecido = true;
+                            let varName = linha.substring(8).trim();
+                            let parentExec = shouldExecute();
+                            blockStack.push({ type: 'escolha', executeNext: false, matched: false, varChoice: varName, parentExec: parentExec });
+                            continue;
+                        }
+                        
+                        if (linhaLower.startsWith('caso ')) {
+                            comandoReconhecido = true;
+                            if (blockStack.length > 0 && blockStack[blockStack.length - 1].type === 'escolha') {
+                                let curChoice = blockStack[blockStack.length - 1];
+                                if (curChoice.parentExec && !curChoice.matched) {
+                                    let valorCaso = linha.substring(5).trim().replace(/["']/g, '');
+                                    let valorVar = variaveis[curChoice.varChoice] ? variaveis[curChoice.varChoice].valor : '';
+                                    if (String(valorVar).toLowerCase() === String(valorCaso).toLowerCase()) {
+                                        curChoice.executeNext = true;
+                                        curChoice.matched = true;
+                                    } else {
+                                        curChoice.executeNext = false;
+                                    }
+                                } else {
+                                    curChoice.executeNext = false;
+                                }
+                            }
+                            continue;
+                        }
+                        
+                        if (linhaLower === 'outrocaso') {
+                            comandoReconhecido = true;
+                            if (blockStack.length > 0 && blockStack[blockStack.length - 1].type === 'escolha') {
+                                let curChoice = blockStack[blockStack.length - 1];
+                                if (curChoice.parentExec && !curChoice.matched) {
+                                    curChoice.executeNext = true;
+                                    curChoice.matched = true;
+                                } else {
+                                    curChoice.executeNext = false;
+                                }
+                            }
+                            continue;
+                        }
+                        
+                        if (linhaLower === 'fimescolha') {
+                            comandoReconhecido = true;
+                            if (blockStack.length > 0 && blockStack[blockStack.length - 1].type === 'escolha') {
+                                blockStack.pop();
+                            }
+                            continue;
+                        }
+
+                        if (!shouldExecute()) {
+                            continue;
+                        }
+
+                        // Leitura de dados leia(...)
+                        if (linhaLower.startsWith('leia(')) {
+                            let nomeVar = linha.substring(linha.indexOf('(') + 1, linha.lastIndexOf(')')).trim();
+                            if (variaveis[nomeVar]) {
+                                let valorDigitado = await pedirInput(nomeVar);
+                                let valorLimpo = valorDigitado;
+                                if (variaveis[nomeVar].tipo === 'letra') valorLimpo = valorDigitado.replace(/'/g, "");
+                                if (variaveis[nomeVar].tipo === 'palavra') valorLimpo = valorDigitado.replace(/"/g, "");
+                                variaveis[nomeVar].valor = valorLimpo;
+                                desenharCaixas(variaveis);
+                            } else {
+                                throw new Error(`Tentou ler para a caixa "${nomeVar}", mas ela não foi criada em Variaveis!`);
+                            }
+                            comandoReconhecido = true;
+                        }
+                        // Atribuição de valor <-
+                        else if (linha.includes('<-')) {
                             let partes = linha.split('<-');
                             let nomeVar = partes[0].trim();
                             let valorBruto = partes[1].trim();
                             
                             if (variaveis[nomeVar]) {
                                 let valorLimpo = valorBruto;
-                                // Limpa as aspas simples e duplas para guardar apenas o valor puro
                                 if (variaveis[nomeVar].tipo === 'letra') valorLimpo = valorBruto.replace(/'/g, "");
                                 if (variaveis[nomeVar].tipo === 'palavra') valorLimpo = valorBruto.replace(/"/g, "");
                                 
                                 variaveis[nomeVar].valor = valorLimpo;
-                                desenharCaixas(variaveis); // Atualiza a caixa com o novo valor!
+                                desenharCaixas(variaveis);
                             } else {
                                 throw new Error(`Tentou usar a caixa "${nomeVar}", mas ela não foi criada!`);
                             }
                             comandoReconhecido = true;
                         } 
-                        // Comando de escrever na tela (Ex: escrever("Olá, ", nome))
+                        // Impressão escrever(...)
                         else if (linhaLower.startsWith('escrever(')) {
-                            // Extrai tudo que está dentro dos parênteses
                             let conteudo = linha.substring(linha.indexOf('(') + 1, linha.lastIndexOf(')'));
-                            
-                            // O Regex ajuda a separar as coisas mantendo as aspas juntas!
                             let partesParaEscrever = conteudo.match(/("[^"]*")|('[^']*')|([a-zA-Z_]\w*)/g);
                             
                             let textoFinal = "";
                             if (partesParaEscrever) {
                                 for (let parte of partesParaEscrever) {
                                     if (parte.startsWith('"') || parte.startsWith("'")) {
-                                        // É um texto normal, tira as aspas e junta
                                         textoFinal += parte.replace(/["']/g, "");
                                     } else {
-                                        // É o nome de uma variável! Pega o valor de dentro da caixa!
                                         if (variaveis[parte]) {
                                             textoFinal += variaveis[parte].valor;
                                         } else {
@@ -309,68 +524,57 @@ Fim</textarea>
                                     }
                                 }
                             }
-                            consoleSaida.innerHTML += textoFinal + "<br>";
-                            comandoReconhecido = true;
-                        }
-                        // Comando de ler do teclado (Ex: leia(nome_piloto))
-                        else if (linhaLower.startsWith('leia(')) {
-                            let nomeVar = linha.substring(linha.indexOf('(') + 1, linha.lastIndexOf(')')).trim();
-                            
-                            if (variaveis[nomeVar]) {
-                                // Pausa a execução do código até o utilizador carregar no Enter
-                                let valorDigitado = await pedirInput(nomeVar);
-                                
-                                // Limpa possíveis aspas caso o utilizador as digite
-                                let valorLimpo = valorDigitado;
-                                if (variaveis[nomeVar].tipo === 'letra') valorLimpo = valorDigitado.replace(/'/g, "");
-                                if (variaveis[nomeVar].tipo === 'palavra') valorLimpo = valorDigitado.replace(/"/g, "");
-
-                                // Guarda na caixa mágica e atualiza a imagem
-                                variaveis[nomeVar].valor = valorLimpo;
-                                desenharCaixas(variaveis);
-                            } else {
-                                throw new Error(`Tentou ler dados para a caixa "${nomeVar}", mas ela não foi criada!`);
-                            }
+                            const divLinha = document.createElement('div');
+                            divLinha.textContent = textoFinal;
+                            consoleSaida.appendChild(divLinha);
+                            consoleSaida.scrollTop = consoleSaida.scrollHeight;
                             comandoReconhecido = true;
                         }
                     }
 
-                    // Se a linha não for em branco, não for comentário e não foi reconhecida, dá um aviso!
                     if (!comandoReconhecido) {
-                        throw new Error(`O computador ficou confuso com a linha: <strong>"${linha}"</strong>. Verifique se escreveu o comando corretamente!`);
+                        throw new Error(`O computador ficou confuso com a linha: <strong>"${linha}"</strong>. Verifique a escrita!`);
                     }
                 }
             } catch (erro) {
-                // Se o professor ou o aluno errar alguma coisa, mostramos de forma amigável
-                consoleSaida.innerHTML += `<span class="text-red-500">❌ OOPS! Encontrei um inseto (bug):<br>${erro.message}</span>`;
+                const divErro = document.createElement('div');
+                divErro.className = 'text-red-400 font-semibold mt-2';
+                divErro.innerHTML = `❌ OOPS! Encontrei um erro:<br>${erro.message}`;
+                consoleSaida.appendChild(divErro);
+            } finally {
+                if (btnExecutar) btnExecutar.disabled = false;
             }
-
-            if(btnExecutar) btnExecutar.disabled = false; // Desbloqueia o botão no fim
         }
 
         function desenharCaixas(vars) {
             const area = document.getElementById('area-variaveis');
-            area.innerHTML = ''; // Limpa para desenhar novamente
+            if (!area) return;
+            area.innerHTML = '';
             
+            const chaves = Object.keys(vars);
+            if (chaves.length === 0) {
+                area.innerHTML = '<p class="text-indigo-400 col-span-full text-center italic mt-4">Clique em executar para ver o computador a criar as caixas!</p>';
+                return;
+            }
+
             for (const [nome, dados] of Object.entries(vars)) {
-                // Escolhe um ícone dependendo do tipo da variável para ajudar visualmente a criança
                 let icone = '🔢';
                 if (dados.tipo === 'letra') icone = '🔤';
                 if (dados.tipo === 'palavra') icone = '🏷️';
 
-                const htmlCaixa = `
-                    <div class="caixa-magica bg-white rounded-xl overflow-hidden border-2 border-slate-200 flex flex-col h-28">
-                        <div class="etiqueta px-3 py-2 text-xs font-bold text-slate-800 uppercase text-center border-b-2 border-slate-200">
-                            ${icone} ${nome}
-                        </div>
-                        <div class="flex-grow flex items-center justify-center p-2 bg-slate-50">
-                            <span class="font-bold text-xl ${dados.valor === '???' ? 'text-slate-300' : 'text-indigo-600'}">
-                                ${dados.valor}
-                            </span>
-                        </div>
+                const card = document.createElement('div');
+                card.className = 'caixa-magica bg-white rounded-xl overflow-hidden border-2 border-slate-200 flex flex-col h-28 shadow-sm';
+                card.innerHTML = `
+                    <div class="etiqueta px-3 py-2 text-xs font-bold text-slate-800 uppercase text-center border-b-2 border-slate-200">
+                        ${icone} ${nome}
+                    </div>
+                    <div class="flex-grow flex items-center justify-center p-2 bg-slate-50">
+                        <span class="font-bold text-xl ${dados.valor === '???' ? 'text-slate-300' : 'text-indigo-600'}">
+                            ${dados.valor}
+                        </span>
                     </div>
                 `;
-                area.innerHTML += htmlCaixa;
+                area.appendChild(card);
             }
         }
     </script>
