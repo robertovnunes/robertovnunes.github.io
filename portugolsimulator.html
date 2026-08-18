@@ -62,10 +62,10 @@
             </div>
 
             <div class="relative flex-grow bg-slate-900 rounded-xl overflow-hidden min-h-[350px] focus-within:ring-4 focus-within:ring-emerald-300">
-                <!-- Camada que mostra as cores (fica por baixo) -->
+                <!-- Camada que mostra as cores -->
                 <pre id="highlight-layer" class="editor-base absolute inset-0 w-full h-full overflow-y-auto text-slate-100 pointer-events-none" aria-hidden="true"></pre>
                 
-                <!-- Camada onde o utilizador escreve (fica por cima e transparente) -->
+                <!-- Camada transparente de escrita -->
                 <textarea id="editor" class="editor-base absolute inset-0 w-full h-full bg-transparent text-transparent caret-emerald-300 resize-none outline-none" spellcheck="false" oninput="atualizarCores(); agendarSalvamento()" onscroll="sincronizarScroll()">Algoritmo "Jogo_de_Corrida"
 
 Variaveis
@@ -267,15 +267,59 @@ Fim</textarea>
             }
         }
 
-        function pedirInput(nomeVar) {
-            return new Promise((resolve) => {
+        // Função de validação estrita de tipos
+        function validarEExtrairValor(valorBruto, tipoVar, nomeVar, variaveis) {
+            let val = valorBruto.trim();
+            let keyVar = val.toLowerCase();
+
+            // Se for o nome de outra variável existente
+            if (variaveis && variaveis[keyVar]) {
+                let varOrigem = variaveis[keyVar];
+                if (varOrigem.valor === '???') {
+                    throw new Error(`A caixa "${varOrigem.nomeOriginal}" ainda está vazia! Atribua um valor a ela primeiro.`);
+                }
+                if (varOrigem.tipo !== tipoVar) {
+                    throw new Error(`Erro de Tipo: A caixa "${nomeVar}" é do tipo <strong>${tipoVar.toUpperCase()}</strong>, mas a caixa "${varOrigem.nomeOriginal}" é do tipo <strong>${varOrigem.tipo.toUpperCase()}</strong>!`);
+                }
+                return varOrigem.valor;
+            }
+
+            // Validação de palavra (requer aspas duplas)
+            if (tipoVar === 'palavra') {
+                if (!/^"[^"]*"$/.test(val)) {
+                    throw new Error(`Erro de Tipo: A variável "<strong>${nomeVar}</strong>" é do tipo <strong>palavra</strong> e só aceita valores entre aspas duplas (ex: "Roberto")!`);
+                }
+                return val.slice(1, -1);
+            }
+
+            // Validação de letra (requer aspas simples e apenas 1 caractere)
+            if (tipoVar === 'letra') {
+                if (!/^'[^']'$/.test(val)) {
+                    throw new Error(`Erro de Tipo: A variável "<strong>${nomeVar}</strong>" é do tipo <strong>letra</strong> e só aceita 1 caractere entre aspas simples (ex: 'X')!`);
+                }
+                return val.slice(1, -1);
+            }
+
+            // Validação de numero (requer números inteiros sem aspas)
+            if (tipoVar === 'numero') {
+                if (!/^-?\d+$/.test(val)) {
+                    throw new Error(`Erro de Tipo: A variável "<strong>${nomeVar}</strong>" é do tipo <strong>numero</strong> e só aceita números inteiros sem aspas (ex: 100)!`);
+                }
+                return val;
+            }
+
+            return val;
+        }
+
+        function pedirInput(nomeVar, tipoVar) {
+            return new Promise((resolve, reject) => {
                 const consoleSaida = document.getElementById('console-saida');
                 
                 const wrapper = document.createElement('div');
                 wrapper.className = 'flex items-center gap-2 my-1 text-emerald-300';
                 
                 const label = document.createElement('span');
-                label.textContent = `Digite um valor para ${nomeVar}: `;
+                label.textContent = `Digite um valor para ${nomeVar} (${tipoVar}): `;
                 
                 const input = document.createElement('input');
                 input.type = 'text';
@@ -290,9 +334,15 @@ Fim</textarea>
                 
                 input.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
-                        const valor = input.value;
-                        wrapper.innerHTML = `<span class="text-emerald-400"><strong>&gt; ${nomeVar}:</strong> ${valor}</span>`;
-                        resolve(valor);
+                        const valorBruto = input.value.trim();
+                        try {
+                            const valorLimpo = validarEExtrairValor(valorBruto, tipoVar, nomeVar, null);
+                            wrapper.innerHTML = `<span class="text-emerald-400"><strong>&gt; ${nomeVar}:</strong> ${valorBruto}</span>`;
+                            resolve({ valorLimpo, valorOriginal: valorBruto });
+                        } catch (err) {
+                            wrapper.innerHTML = `<span class="text-red-400"><strong>&gt; ${nomeVar}:</strong> ${valorBruto}</span>`;
+                            reject(err);
+                        }
                     }
                 });
             });
@@ -336,7 +386,7 @@ Fim</textarea>
             consoleSaida.innerHTML = '';
             
             let modo = 'INICIO';
-            let variaveis = {}; // Chaves guardadas em minusculas para pesquisa case-insensitive
+            let variaveis = {};
             let blockStack = [];
             
             function shouldExecute() {
@@ -469,11 +519,8 @@ Fim</textarea>
                             let nomeVar = linha.substring(linha.indexOf('(') + 1, linha.lastIndexOf(')')).trim();
                             let keyVar = nomeVar.toLowerCase();
                             if (variaveis[keyVar]) {
-                                let valorDigitado = await pedirInput(variaveis[keyVar].nomeOriginal || nomeVar);
-                                let valorLimpo = valorDigitado;
-                                if (variaveis[keyVar].tipo === 'letra') valorLimpo = valorDigitado.replace(/'/g, "");
-                                if (variaveis[keyVar].tipo === 'palavra') valorLimpo = valorDigitado.replace(/"/g, "");
-                                variaveis[keyVar].valor = valorLimpo;
+                                let res = await pedirInput(variaveis[keyVar].nomeOriginal || nomeVar, variaveis[keyVar].tipo);
+                                variaveis[keyVar].valor = res.valorLimpo;
                                 desenharCaixas(variaveis);
                             } else {
                                 throw new Error(`Tentou ler para a caixa "${nomeVar}", mas ela não foi criada em Variaveis!`);
@@ -488,14 +535,12 @@ Fim</textarea>
                             let keyVar = nomeVar.toLowerCase();
                             
                             if (variaveis[keyVar]) {
-                                let valorLimpo = valorBruto;
-                                if (variaveis[keyVar].tipo === 'letra') valorLimpo = valorBruto.replace(/'/g, "");
-                                if (variaveis[keyVar].tipo === 'palavra') valorLimpo = valorBruto.replace(/"/g, "");
+                                let valorLimpo = validarEExtrairValor(valorBruto, variaveis[keyVar].tipo, variaveis[keyVar].nomeOriginal || nomeVar, variaveis);
                                 
                                 variaveis[keyVar].valor = valorLimpo;
                                 desenharCaixas(variaveis);
                             } else {
-                                throw new Error(`Tentou usar a caixa "${nomeVar}", mas ela não foi criada!`);
+                                throw new Error(`Tentou usar a caixa "${nomeVar}", mas ela não foi criada em Variaveis!`);
                             }
                             comandoReconhecido = true;
                         } 
