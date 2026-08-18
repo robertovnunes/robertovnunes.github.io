@@ -16,7 +16,6 @@
         .caixa-magica:hover { transform: translateY(-5px); }
         .etiqueta { background: repeating-linear-gradient(45deg, #fcd34d, #fcd34d 10px, #fbbf24 10px, #fbbf24 20px); }
         
-        /* Configuração para sincronizar a camada de texto transparente e o destaque de sintaxe */
         .editor-base {
             font-family: 'Fira Code', monospace;
             font-size: 1.125rem;
@@ -109,13 +108,21 @@ Fim</textarea>
         let posicaoHistorico = -1;
         let temporizadorSalvar = null;
 
+        function sincronizarScroll() {
+            const editor = document.getElementById('editor');
+            const highlight = document.getElementById('highlight-layer');
+            if (editor && highlight) {
+                highlight.scrollTop = editor.scrollTop;
+                highlight.scrollLeft = editor.scrollLeft;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const editor = document.getElementById('editor');
             if (editor) {
                 salvarEstado();
                 atualizarCores();
 
-                // Atalho para Tabulação (Tab), Indentação Automática (Enter) e Undo/Redo pelo teclado
                 editor.addEventListener('keydown', (e) => {
                     if (e.key === 'Tab') {
                         e.preventDefault();
@@ -132,15 +139,12 @@ Fim</textarea>
                         const end = editor.selectionEnd;
                         const val = editor.value;
 
-                        // Obtém a linha atual onde o cursor está antes de mudar de linha
                         const lastNewline = val.lastIndexOf('\n', start - 1);
                         const lineBeforeCursor = val.substring(lastNewline + 1, start);
 
-                        // Mantém a mesma indentação (espaços no início da linha)
                         const indentMatch = lineBeforeCursor.match(/^(\s*)/);
                         let currentIndent = indentMatch ? indentMatch[1] : '';
 
-                        // Verifica se a linha abre um novo bloco de código para aumentar a indentação
                         const lineTrimmed = lineBeforeCursor.trim().toLowerCase();
                         const blockKeywords = ['variaveis', 'inicio', 'senao', 'escolha', 'caso', 'outrocaso'];
                         
@@ -224,25 +228,15 @@ Fim</textarea>
             
             let texto = editor.value;
 
-            // 1. Escapar caracteres HTML especiais
             texto = texto
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;');
 
-            // 2. Destacar Strings ("texto" ou 'texto') -> Amarelo
             texto = texto.replace(/("[^"]*"|'[^']*')/g, '<span class="text-yellow-300">$1</span>');
-            
-            // 3. Palavras-chave -> Rosa
             texto = texto.replace(/\b(Algoritmo|Variaveis|Inicio|Fim|escrever|leia|se|entao|senao|fimse|escolha|caso|outrocaso|fimescolha)\b/gi, '<span class="text-pink-400 font-bold">$1</span>');
-            
-            // 4. Tipos de dados -> Azul Claro
             texto = texto.replace(/\b(numero|letra|palavra)\b/gi, '<span class="text-sky-300 italic">$1</span>');
-            
-            // 5. Operadores (<- e :) -> Roxo (&lt;- e :)
             texto = texto.replace(/(&lt;-|:)/g, '<span class="text-purple-400 font-bold">$1</span>');
-            
-            // 6. Comentários (// comentário) -> Cinzento
             texto = texto.replace(/(\/\/.*)/g, '<span class="text-slate-400 italic">$1</span>');
 
             if (texto.endsWith('\n')) {
@@ -250,15 +244,6 @@ Fim</textarea>
             }
 
             highlight.innerHTML = texto;
-        }
-
-        function sincronizarScroll() {
-            const editor = document.getElementById('editor');
-            const highlight = document.getElementById('highlight-layer');
-            if (editor && highlight) {
-                highlight.scrollTop = editor.scrollTop;
-                highlight.scrollLeft = editor.scrollLeft;
-            }
         }
 
         function limparCodigo() {
@@ -315,8 +300,9 @@ Fim</textarea>
 
         function evalCondicao(condStr, variaveis) {
             let expr = condStr.trim();
-            for (const [nome, dados] of Object.entries(variaveis)) {
-                const regex = new RegExp(`\\b${nome}\\b`, 'g');
+            for (const [key, dados] of Object.entries(variaveis)) {
+                const nomeParaBuscar = dados.nomeOriginal || key;
+                const regex = new RegExp(`\\b${nomeParaBuscar}\\b`, 'gi');
                 let valStr = dados.valor;
                 if (dados.tipo === 'numero') {
                     if (valStr === '???') valStr = '0';
@@ -350,7 +336,7 @@ Fim</textarea>
             consoleSaida.innerHTML = '';
             
             let modo = 'INICIO';
-            let variaveis = {};
+            let variaveis = {}; // Chaves guardadas em minusculas para pesquisa case-insensitive
             let blockStack = [];
             
             function shouldExecute() {
@@ -369,22 +355,27 @@ Fim</textarea>
                     
                     let comandoReconhecido = false;
 
-                    if (modo === 'DECLARACAO') {
-                        if (linha.includes(':')) {
-                            let partes = linha.split(':');
-                            let nomeVar = partes[0].trim();
-                            let tipoVar = partes[1].trim().toLowerCase();
-                            
+                    let isVarDecl = modo === 'DECLARACAO' && linha.includes(':');
+                    
+                    if (isVarDecl) {
+                        let partes = linha.split(':');
+                        let nomeVar = partes[0].trim();
+                        let tipoVar = partes[1].trim().toLowerCase();
+                        
+                        if (nomeVar && tipoVar) {
                             if (!['numero', 'letra', 'palavra'].includes(tipoVar)) {
                                 throw new Error(`O computador não conhece o tipo "${tipoVar}". Use: numero, letra ou palavra!`);
                             }
 
-                            variaveis[nomeVar] = { tipo: tipoVar, valor: '???' };
+                            let keyVar = nomeVar.toLowerCase();
+                            variaveis[keyVar] = { nomeOriginal: nomeVar, tipo: tipoVar, valor: '???' };
                             desenharCaixas(variaveis);
                             comandoReconhecido = true;
+                            continue;
                         }
-                    } 
-                    else if (modo === 'EXECUCAO') {
+                    }
+                    
+                    if (modo === 'EXECUCAO') {
                         // Estrutura de condição 'se ... entao'
                         if (linhaLower.startsWith('se ') && linhaLower.includes('entao')) {
                             comandoReconhecido = true;
@@ -432,7 +423,8 @@ Fim</textarea>
                                 let curChoice = blockStack[blockStack.length - 1];
                                 if (curChoice.parentExec && !curChoice.matched) {
                                     let valorCaso = linha.substring(5).trim().replace(/["']/g, '');
-                                    let valorVar = variaveis[curChoice.varChoice] ? variaveis[curChoice.varChoice].valor : '';
+                                    let keyChoice = curChoice.varChoice.toLowerCase();
+                                    let valorVar = variaveis[keyChoice] ? variaveis[keyChoice].valor : '';
                                     if (String(valorVar).toLowerCase() === String(valorCaso).toLowerCase()) {
                                         curChoice.executeNext = true;
                                         curChoice.matched = true;
@@ -475,12 +467,13 @@ Fim</textarea>
                         // Leitura de dados leia(...)
                         if (linhaLower.startsWith('leia(')) {
                             let nomeVar = linha.substring(linha.indexOf('(') + 1, linha.lastIndexOf(')')).trim();
-                            if (variaveis[nomeVar]) {
-                                let valorDigitado = await pedirInput(nomeVar);
+                            let keyVar = nomeVar.toLowerCase();
+                            if (variaveis[keyVar]) {
+                                let valorDigitado = await pedirInput(variaveis[keyVar].nomeOriginal || nomeVar);
                                 let valorLimpo = valorDigitado;
-                                if (variaveis[nomeVar].tipo === 'letra') valorLimpo = valorDigitado.replace(/'/g, "");
-                                if (variaveis[nomeVar].tipo === 'palavra') valorLimpo = valorDigitado.replace(/"/g, "");
-                                variaveis[nomeVar].valor = valorLimpo;
+                                if (variaveis[keyVar].tipo === 'letra') valorLimpo = valorDigitado.replace(/'/g, "");
+                                if (variaveis[keyVar].tipo === 'palavra') valorLimpo = valorDigitado.replace(/"/g, "");
+                                variaveis[keyVar].valor = valorLimpo;
                                 desenharCaixas(variaveis);
                             } else {
                                 throw new Error(`Tentou ler para a caixa "${nomeVar}", mas ela não foi criada em Variaveis!`);
@@ -492,13 +485,14 @@ Fim</textarea>
                             let partes = linha.split('<-');
                             let nomeVar = partes[0].trim();
                             let valorBruto = partes[1].trim();
+                            let keyVar = nomeVar.toLowerCase();
                             
-                            if (variaveis[nomeVar]) {
+                            if (variaveis[keyVar]) {
                                 let valorLimpo = valorBruto;
-                                if (variaveis[nomeVar].tipo === 'letra') valorLimpo = valorBruto.replace(/'/g, "");
-                                if (variaveis[nomeVar].tipo === 'palavra') valorLimpo = valorBruto.replace(/"/g, "");
+                                if (variaveis[keyVar].tipo === 'letra') valorLimpo = valorBruto.replace(/'/g, "");
+                                if (variaveis[keyVar].tipo === 'palavra') valorLimpo = valorBruto.replace(/"/g, "");
                                 
-                                variaveis[nomeVar].valor = valorLimpo;
+                                variaveis[keyVar].valor = valorLimpo;
                                 desenharCaixas(variaveis);
                             } else {
                                 throw new Error(`Tentou usar a caixa "${nomeVar}", mas ela não foi criada!`);
@@ -516,8 +510,9 @@ Fim</textarea>
                                     if (parte.startsWith('"') || parte.startsWith("'")) {
                                         textoFinal += parte.replace(/["']/g, "");
                                     } else {
-                                        if (variaveis[parte]) {
-                                            textoFinal += variaveis[parte].valor;
+                                        let keyVar = parte.toLowerCase();
+                                        if (variaveis[keyVar]) {
+                                            textoFinal += variaveis[keyVar].valor;
                                         } else {
                                             throw new Error(`Tentou escrever a variável "${parte}", mas ela não existe.`);
                                         }
@@ -557,16 +552,17 @@ Fim</textarea>
                 return;
             }
 
-            for (const [nome, dados] of Object.entries(vars)) {
+            for (const [key, dados] of Object.entries(vars)) {
                 let icone = '🔢';
                 if (dados.tipo === 'letra') icone = '🔤';
                 if (dados.tipo === 'palavra') icone = '🏷️';
+                let nomeExibicao = dados.nomeOriginal || key;
 
                 const card = document.createElement('div');
                 card.className = 'caixa-magica bg-white rounded-xl overflow-hidden border-2 border-slate-200 flex flex-col h-28 shadow-sm';
                 card.innerHTML = `
                     <div class="etiqueta px-3 py-2 text-xs font-bold text-slate-800 uppercase text-center border-b-2 border-slate-200">
-                        ${icone} ${nome}
+                        ${icone} ${nomeExibicao}
                     </div>
                     <div class="flex-grow flex items-center justify-center p-2 bg-slate-50">
                         <span class="font-bold text-xl ${dados.valor === '???' ? 'text-slate-300' : 'text-indigo-600'}">
